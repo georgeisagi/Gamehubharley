@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import JSZip from 'jszip';
 import { 
   Download, 
@@ -15,51 +15,29 @@ import {
   Copy, 
   Check, 
   PackageCheck,
-  Sparkles,
   ArrowDownToLine,
-  CheckCircle
+  CheckCircle,
+  Github,
+  WifiOff,
+  Share2
 } from 'lucide-react';
 import { ANDROID_PROJECT_FILES } from './androidProjectFiles';
 import { GAMEHUB_APK_BASE64 } from './apkData';
+import { usePWAInstall, useOnlineStatus } from './usePWAInstall';
 
 export default function App() {
-  // Modal / panel visibility
   const [showTools, setShowTools] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<'apk' | 'export' | 'sdk' | 'code'>('apk');
+  const [activeTab, setActiveTab] = useState<'apk' | 'pwa' | 'github' | 'export' | 'sdk' | 'code'>('apk');
   const [selectedFile, setSelectedFile] = useState<string>('app/src/main/java/com/georgeisagi/gamehub/MainActivity.kt');
   const [isZipping, setIsZipping] = useState<boolean>(false);
   const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
   const [apkDownloadSuccess, setApkDownloadSuccess] = useState<boolean>(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstallable, setIsInstallable] = useState<boolean>(false);
   const [copiedCode, setCopiedCode] = useState<boolean>(false);
+  const [copiedGit, setCopiedGit] = useState<boolean>(false);
+  const [showIOSModal, setShowIOSModal] = useState<boolean>(false);
 
-  // Listen for PWA install prompt
-  useEffect(() => {
-    const handleBeforeInstall = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setIsInstallable(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-    };
-  }, []);
-
-  const handleInstallApp = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setIsInstallable(false);
-      }
-      setDeferredPrompt(null);
-    } else {
-      alert("Para instalar no Android pelo Chrome:\n1. Toque nos 3 pontinhos (⋮) do navegador.\n2. Selecione 'Adicionar à tela inicial' ou 'Instalar aplicativo'.\nO GameHub será instalado com a tela branca pura!");
-    }
-  };
+  const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
+  const isOnline = useOnlineStatus();
 
   const handleDownloadApk = () => {
     try {
@@ -83,7 +61,6 @@ export default function App() {
       setTimeout(() => setApkDownloadSuccess(false), 4000);
     } catch (err) {
       console.error('Erro ao acionar download via blob:', err);
-      // Fallback direto
       window.location.href = '/GameHub.apk';
     }
   };
@@ -99,7 +76,7 @@ export default function App() {
           rootFolder.file(file.path, file.content);
         });
 
-        // Inclui também o arquivo GameHub.apk pré-compilado dentro do ZIP
+        // Inclui o arquivo GameHub.apk binário já compilado dentro do ZIP
         try {
           const byteCharacters = atob(GAMEHUB_APK_BASE64);
           const byteNumbers = new Array(byteCharacters.length);
@@ -140,6 +117,14 @@ export default function App() {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
+  const gitPushCommand = `git remote add origin https://github.com/SEU_USUARIO/GameHub.git\ngit branch -M main\ngit push -u origin main --tags`;
+
+  const handleCopyGit = () => {
+    navigator.clipboard.writeText(gitPushCommand);
+    setCopiedGit(true);
+    setTimeout(() => setCopiedGit(false), 2500);
+  };
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-white select-none">
       {/* 
@@ -155,9 +140,15 @@ export default function App() {
         }}
       />
 
-      {/* 
-        Painel de Controle / Central do APK e Exportação
-      */}
+      {/* Indicador de Status Offline do PWA */}
+      {!isOnline && (
+        <div className="absolute top-4 left-4 z-50 flex items-center gap-2 rounded-xl bg-slate-900 text-white px-3 py-1.5 text-xs shadow-md border border-slate-700">
+          <WifiOff className="w-3.5 h-3.5 text-amber-400" />
+          <span>Modo Offline Ativo (PWA em cache)</span>
+        </div>
+      )}
+
+      {/* Painel de Controle / Central do APK, PWA e GitHub */}
       {showTools ? (
         <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-3 sm:p-6">
           {/* Barra superior de status e identificação */}
@@ -170,7 +161,7 @@ export default function App() {
                 <div className="flex items-center gap-2">
                   <h1 className="font-semibold text-slate-900 text-sm leading-tight">GameHub</h1>
                   <span className="text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded">
-                    APK Pronto
+                    APK & PWA
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 font-mono">com.georgeisagi.gamehub</p>
@@ -201,9 +192,9 @@ export default function App() {
             </div>
           </header>
 
-          {/* Modal / Card central com instruções, download do APK e opções */}
+          {/* Modal / Card central com abas */}
           <main className="pointer-events-auto my-auto max-w-4xl mx-auto w-full bg-white/95 backdrop-blur-md border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-xl max-h-[82vh] flex flex-col">
-            {/* Abas */}
+            {/* Barra de Abas */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
               <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
                 <button
@@ -215,7 +206,29 @@ export default function App() {
                   }`}
                 >
                   <PackageCheck className="w-3.5 h-3.5" />
-                  Baixar APK Nativo
+                  APK Nativo
+                </button>
+                <button
+                  onClick={() => setActiveTab('pwa')}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+                    activeTab === 'pwa'
+                      ? 'bg-indigo-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  PWA (Instalar)
+                </button>
+                <button
+                  onClick={() => setActiveTab('github')}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
+                    activeTab === 'github'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <Github className="w-3.5 h-3.5 text-emerald-400" />
+                  GitHub & Release
                 </button>
                 <button
                   onClick={() => setActiveTab('export')}
@@ -226,7 +239,7 @@ export default function App() {
                   }`}
                 >
                   <Download className="w-3.5 h-3.5" />
-                  Projeto Completo (.zip)
+                  Projeto (.zip)
                 </button>
                 <button
                   onClick={() => setActiveTab('sdk')}
@@ -248,20 +261,19 @@ export default function App() {
                   }`}
                 >
                   <Code2 className="w-3.5 h-3.5" />
-                  Código Kotlin / Compose
+                  Código
                 </button>
               </div>
 
               <div className="hidden sm:flex items-center gap-2 text-xs text-emerald-600 font-mono font-medium">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                APK Assinado & Válido
+                v1.0.0 Pronta
               </div>
             </div>
 
-            {/* Conteúdo da Aba 1: Download Direto do APK */}
+            {/* Aba 1: Download Direto do APK */}
             {activeTab === 'apk' && (
               <div className="space-y-4 overflow-y-auto pr-1">
-                {/* Banner de download do APK compilado */}
                 <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-slate-900 text-white rounded-2xl p-5 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2 mb-1.5">
@@ -301,63 +313,173 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Como instalar o APK no celular */}
                 <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-1.5">
                     <Smartphone className="w-4 h-4 text-slate-800" />
-                    Como Instalar no Celular Android (Guia Simples)
+                    Como Instalar no Celular Android
                   </h4>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                     <div className="bg-white p-3 rounded-xl border border-slate-200">
-                      <div className="w-5 h-5 rounded-full bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center mb-1.5">
-                        1
-                      </div>
+                      <div className="w-5 h-5 rounded-full bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center mb-1.5">1</div>
                       <p className="font-semibold text-slate-900 text-xs">Baixe o APK</p>
                       <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
-                        Toque no botão <strong>"Baixar GameHub.apk"</strong> acima diretamente no celular (ou envie via WhatsApp/Drive).
+                        Toque no botão <strong>"Baixar GameHub.apk"</strong> acima diretamente no celular.
                       </p>
                     </div>
 
                     <div className="bg-white p-3 rounded-xl border border-slate-200">
-                      <div className="w-5 h-5 rounded-full bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center mb-1.5">
-                        2
-                      </div>
+                      <div className="w-5 h-5 rounded-full bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center mb-1.5">2</div>
                       <p className="font-semibold text-slate-900 text-xs">Abra o Arquivo</p>
                       <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
-                        Toque na notificação de download do celular para abrir o arquivo. Se o Android pedir permissão para instalar fontes desconhecidas, selecione <strong>Permitir</strong>.
+                        Toque no download concluído. Caso o Android solicite, autorize <strong>Permitir desta fonte</strong>.
                       </p>
                     </div>
 
                     <div className="bg-white p-3 rounded-xl border border-slate-200">
-                      <div className="w-5 h-5 rounded-full bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center mb-1.5">
-                        3
-                      </div>
+                      <div className="w-5 h-5 rounded-full bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center mb-1.5">3</div>
                       <p className="font-semibold text-slate-900 text-xs">Toque em Instalar</p>
                       <p className="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
-                        Toque em <strong>Instalar</strong> e depois em <strong>Abrir</strong>. O app abrirá instantaneamente em tela branca pura (#FFFFFF)!
+                        Toque em <strong>Instalar</strong>. O GameHub abrirá imediatamente com a tela branca pura (#FFFFFF)!
                       </p>
                     </div>
-                  </div>
-                </div>
-
-                {/* Ficha técnica da compilação do APK */}
-                <div className="bg-slate-50/70 border border-slate-200/70 rounded-xl p-3 text-xs">
-                  <div className="font-semibold text-slate-800 mb-2 flex items-center gap-1.5 text-xs">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    Informações Técnicas do Binário APK:
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-slate-600">
-                    <div>Identificador: <strong className="font-mono text-slate-800">com.georgeisagi.gamehub</strong></div>
-                    <div>Versão: <strong className="text-slate-800">1.0.0 (code 1)</strong></div>
-                    <div>Assinatura: <strong className="text-emerald-700">v1 + v2 + v3 (Válida)</strong></div>
-                    <div>Compatibilidade: <strong className="text-slate-800">Android 5.0 até 15+</strong></div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Conteúdo da Aba 2: Exportar & Projeto Completo */}
+            {/* Aba 2: PWA Completo */}
+            {activeTab === 'pwa' && (
+              <div className="space-y-4 overflow-y-auto pr-1">
+                <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
+                      Progressive Web App
+                    </span>
+                    <h3 className="text-base font-bold text-slate-900 mt-1">
+                      Instalação Direta sem Loja (PWA / WebAPK)
+                    </h3>
+                    <p className="text-xs text-slate-600 mt-1 max-w-lg leading-relaxed">
+                      O PWA adiciona o <strong>GameHub</strong> na tela inicial do celular com ícone oficial, abertura autônoma em tela cheia (Edge-to-Edge) e suporte 100% offline via Service Worker.
+                    </p>
+                  </div>
+
+                  <div className="shrink-0 w-full sm:w-auto">
+                    {isInstalled ? (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-800 rounded-xl font-semibold text-xs border border-emerald-300">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        PWA Já Instalado!
+                      </div>
+                    ) : isInstallable ? (
+                      <button
+                        onClick={install}
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow transition-all active:scale-95"
+                      >
+                        <Smartphone className="w-4 h-4" />
+                        Instalar GameHub Agora
+                      </button>
+                    ) : isIOS ? (
+                      <button
+                        onClick={() => setShowIOSModal(true)}
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow transition-all active:scale-95"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        Como Instalar no iPhone
+                      </button>
+                    ) : (
+                      <button
+                        onClick={install}
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow transition-all active:scale-95"
+                      >
+                        <Smartphone className="w-4 h-4" />
+                        Instalar no Celular
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="border border-slate-200 rounded-xl p-3 bg-white">
+                    <h5 className="font-semibold text-slate-900">Service Worker Ativo</h5>
+                    <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">
+                      Armazena em cache todos os recursos para carregar a tela branca pura mesmo no modo avião.
+                    </p>
+                  </div>
+                  <div className="border border-slate-200 rounded-xl p-3 bg-white">
+                    <h5 className="font-semibold text-slate-900">Web App Manifest</h5>
+                    <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">
+                      Configurado com display <code className="text-slate-800 font-mono">standalone</code>, tema e fundo <code className="text-slate-800 font-mono">#FFFFFF</code>.
+                    </p>
+                  </div>
+                  <div className="border border-slate-200 rounded-xl p-3 bg-white">
+                    <h5 className="font-semibold text-slate-900">Ícones Adaptativos</h5>
+                    <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">
+                      Resoluções 192x192, 512x512, maskable e apple-touch-icon para Android e iOS.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Aba 3: GitHub & Release do APK */}
+            {activeTab === 'github' && (
+              <div className="space-y-4 overflow-y-auto pr-1">
+                <div className="bg-slate-900 text-slate-100 rounded-2xl p-4 sm:p-5 shadow-sm">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Github className="w-5 h-5 text-emerald-400" />
+                    <h3 className="font-bold text-sm sm:text-base text-white">
+                      Repositório Git & Workflow de Release do APK
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed max-w-xl">
+                    O projeto local já está comitado no branch <code className="text-emerald-400 font-mono">main</code> com a tag <code className="text-emerald-400 font-mono">v1.0.0</code> e o arquivo <code className="text-emerald-400 font-mono">GameHub.apk</code> incluído.
+                    Também foi criado o workflow do <strong>GitHub Actions</strong> em <code className="text-emerald-400 font-mono">.github/workflows/build-apk.yml</code> para gerar releases automáticas com o APK!
+                  </p>
+                </div>
+
+                <div className="border border-slate-200 rounded-2xl p-4 bg-white space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Como enviar o projeto e o APK para o seu GitHub em 3 passos:
+                    </h4>
+                    <button
+                      onClick={handleCopyGit}
+                      className="flex items-center gap-1 px-2.5 py-1 text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded transition-colors"
+                    >
+                      {copiedGit ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedGit ? 'Comandos Copiados!' : 'Copiar Comandos'}</span>
+                    </button>
+                  </div>
+
+                  <div className="text-xs space-y-2">
+                    <p className="text-slate-600 text-[11px]">
+                      1. Crie um repositório vazio no seu GitHub: <a href="https://github.com/new" target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline font-semibold">github.com/new</a> com o nome <strong>GameHub</strong>.
+                    </p>
+                    <p className="text-slate-600 text-[11px]">
+                      2. No terminal do seu computador (na pasta do projeto extraído), cole os comandos:
+                    </p>
+                    <div className="bg-slate-950 text-emerald-400 p-3 rounded-xl font-mono text-xs overflow-x-auto border border-slate-800">
+                      <pre>{gitPushCommand}</pre>
+                    </div>
+                    <p className="text-slate-600 text-[11px]">
+                      3. Pronto! Ao dar o push, o GitHub disponibilizará o arquivo <strong>GameHub.apk</strong> tanto no repositório quanto na aba <strong>Releases</strong> com link direto de download!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-900 flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                  <div>
+                    <strong>GitHub Actions Configurado:</strong>
+                    <p className="text-[11px] text-emerald-800 mt-0.5">
+                      Sempre que você criar uma tag ou fizer commit, o GitHub Actions compilará automaticamente o APK e criará a release para download público.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Aba 4: Projeto (.zip) */}
             {activeTab === 'export' && (
               <div className="space-y-4 overflow-y-auto pr-1">
                 <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4">
@@ -380,86 +502,39 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Opção 1: Download do Projeto Android Nativo */}
-                  <div className="border border-slate-200 rounded-2xl p-4 bg-white hover:border-slate-300 transition-all flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                          Código-Fonte Completo
-                        </span>
-                        <span className="text-xs font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                          Kotlin + Compose
-                        </span>
-                      </div>
-                      <h4 className="font-semibold text-sm text-slate-900">
-                        Baixar Projeto Completo (.zip)
-                      </h4>
-                      <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                        Inclui todos os fontes em Jetpack Compose, Gradle Wrapper, o APK compilado e os scripts de compilação.
-                      </p>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-[11px] text-slate-500">Android Studio / Gradle</span>
-                      <button
-                        onClick={handleDownloadZip}
-                        disabled={isZipping}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-all active:scale-95"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        {isZipping ? 'Compactando...' : downloadSuccess ? 'Baixado!' : 'Baixar ZIP'}
-                      </button>
-                    </div>
+                <div className="border border-slate-200 rounded-2xl p-4 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h4 className="font-semibold text-sm text-slate-900">
+                      Baixar Projeto Completo (.zip)
+                    </h4>
+                    <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                      Inclui todos os fontes em Jetpack Compose, Gradle Wrapper, o APK compilado e os scripts de compilação.
+                    </p>
                   </div>
-
-                  {/* Opção 2: Instalar no Celular via PWA / WebAPK */}
-                  <div className="border border-slate-200 rounded-2xl p-4 bg-white hover:border-slate-300 transition-all flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                          Instalação Direta
-                        </span>
-                        <span className="text-xs font-mono text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                          PWA / WebAPK
-                        </span>
-                      </div>
-                      <h4 className="font-semibold text-sm text-slate-900">
-                        Instalar como WebAPK
-                      </h4>
-                      <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                        Instala o GameHub diretamente na tela inicial do celular. Abre em tela cheia independente com fundo branco puro (#FFFFFF).
-                      </p>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-[11px] text-slate-500">Instalação em 1 toque</span>
-                      <button
-                        onClick={handleInstallApp}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all active:scale-95"
-                      >
-                        <Smartphone className="w-3.5 h-3.5" />
-                        Instalar no Celular
-                      </button>
-                    </div>
-                  </div>
+                  <button
+                    onClick={handleDownloadZip}
+                    disabled={isZipping}
+                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition-all active:scale-95 shrink-0"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    {isZipping ? 'Compactando...' : downloadSuccess ? 'Baixado!' : 'Baixar ZIP'}
+                  </button>
                 </div>
               </div>
             )}
 
-            {/* Conteúdo da Aba 3: SDK & Gradle */}
+            {/* Aba 5: SDK & Gradle */}
             {activeTab === 'sdk' && (
               <div className="space-y-4 overflow-y-auto pr-1">
                 <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-4 sm:p-5 shadow-sm">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                          Recomendado pelo Google
-                        </span>
-                        <span className="text-xs text-slate-400">Instalador Oficial Completo</span>
-                      </div>
-                      <h3 className="text-base font-semibold">Android Studio (SDK 35 + Gradle Embutido)</h3>
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                        Recomendado pelo Google
+                      </span>
+                      <h3 className="text-base font-semibold mt-1">Android Studio (SDK 35 + Gradle Embutido)</h3>
                       <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
-                        Instala automaticamente o Android SDK nativo, JDK do Java, gerenciador de dependências Gradle e o compilador Jetpack Compose com apenas 1 clique.
+                        Instala automaticamente o Android SDK nativo, JDK do Java e Gradle oficial.
                       </p>
                     </div>
 
@@ -477,20 +552,20 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="border border-slate-200 rounded-2xl p-3.5 bg-white flex flex-col justify-between hover:border-slate-300 transition-colors">
+                  <div className="border border-slate-200 rounded-2xl p-3.5 bg-white flex flex-col justify-between">
                     <div>
                       <span className="text-[10px] font-bold text-slate-500 uppercase">Google SDK</span>
-                      <h5 className="font-semibold text-xs text-slate-900 mt-0.5">Android Command-Line Tools</h5>
+                      <h5 className="font-semibold text-xs text-slate-900 mt-0.5">Command-Line Tools</h5>
                       <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                        SDK Tools contendo <code className="font-mono text-[10px]">sdkmanager</code> e build-tools.
+                        SDK Tools contendo <code className="font-mono text-[10px]">sdkmanager</code>.
                       </p>
                     </div>
-                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-col gap-1.5">
+                    <div className="mt-3 pt-2.5 border-t border-slate-100">
                       <a
                         href="https://dl.google.com/android/repository/commandlinetools-win-11076708_latest.zip"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between px-2.5 py-1.5 text-[11px] font-medium bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 rounded-lg transition-colors"
+                        className="flex items-center justify-between px-2.5 py-1.5 text-[11px] font-medium bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 rounded-lg"
                       >
                         <span>Windows (.zip)</span>
                         <Download className="w-3 h-3 text-slate-500" />
@@ -498,20 +573,20 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="border border-slate-200 rounded-2xl p-3.5 bg-white flex flex-col justify-between hover:border-slate-300 transition-colors">
+                  <div className="border border-slate-200 rounded-2xl p-3.5 bg-white flex flex-col justify-between">
                     <div>
                       <span className="text-[10px] font-bold text-slate-500 uppercase">Gradle Nativo</span>
                       <h5 className="font-semibold text-xs text-slate-900 mt-0.5">Gradle Build Tool Oficial</h5>
                       <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                        Distribuição oficial de compilação (v8.9).
+                        Distribuição oficial v8.9.
                       </p>
                     </div>
-                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-col gap-1.5">
+                    <div className="mt-3 pt-2.5 border-t border-slate-100">
                       <a
                         href="https://services.gradle.org/distributions/gradle-8.9-bin.zip"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between px-2.5 py-1.5 text-[11px] font-medium bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 rounded-lg transition-colors"
+                        className="flex items-center justify-between px-2.5 py-1.5 text-[11px] font-medium bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 rounded-lg"
                       >
                         <span>Gradle 8.9 (.zip)</span>
                         <Download className="w-3 h-3 text-slate-500" />
@@ -519,20 +594,20 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="border border-slate-200 rounded-2xl p-3.5 bg-white flex flex-col justify-between hover:border-slate-300 transition-colors">
+                  <div className="border border-slate-200 rounded-2xl p-3.5 bg-white flex flex-col justify-between">
                     <div>
                       <span className="text-[10px] font-bold text-slate-500 uppercase">Requisito do SDK</span>
                       <h5 className="font-semibold text-xs text-slate-900 mt-0.5">OpenJDK 17 (Temurin)</h5>
                       <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                        Ambiente Java JDK 17 necessário para compilar.
+                        Ambiente Java JDK 17 necessário.
                       </p>
                     </div>
-                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-col gap-1.5">
+                    <div className="mt-3 pt-2.5 border-t border-slate-100">
                       <a
                         href="https://adoptium.net/temurin/releases/?version=17"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between px-2.5 py-1.5 text-[11px] font-medium bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 rounded-lg transition-colors"
+                        className="flex items-center justify-between px-2.5 py-1.5 text-[11px] font-medium bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 rounded-lg"
                       >
                         <span>Baixar Java 17</span>
                         <ExternalLink className="w-3 h-3 text-slate-500" />
@@ -543,7 +618,7 @@ export default function App() {
               </div>
             )}
 
-            {/* Conteúdo da Aba 4: Código Kotlin / Compose */}
+            {/* Aba 6: Código Fonte */}
             {activeTab === 'code' && (
               <div className="flex-1 flex flex-col min-h-0 space-y-3">
                 <div className="flex items-center justify-between">
@@ -601,14 +676,33 @@ export default function App() {
           </footer>
         </div>
       ) : (
-        /* Quando no Modo Tela Branca Pura: exibe apenas um gatilho discreto */
         <button
           onClick={() => setShowTools(true)}
           className="absolute bottom-4 right-4 z-50 p-2.5 rounded-full bg-white/70 hover:bg-white text-slate-400 hover:text-slate-800 shadow-sm border border-slate-200/60 opacity-20 hover:opacity-100 transition-opacity"
-          title="Clique para abrir opções de download do APK"
+          title="Clique para abrir opções"
         >
           <Eye className="w-4 h-4" />
         </button>
+      )}
+
+      {/* Modal Guia iOS Safari */}
+      {showIOSModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl text-slate-900">
+            <h3 className="text-base font-bold">Instalar no iPhone / iPad</h3>
+            <p className="mt-2 text-xs text-slate-600 leading-relaxed">
+              1. No Safari, toque no botão <strong>Compartilhar</strong> (ícone com quadrado e seta para cima).<br />
+              2. Role para baixo e selecione <strong>Adicionar à Tela de Início</strong>.<br />
+              3. Toque em <strong>Adicionar</strong> no canto superior direito.
+            </p>
+            <button
+              onClick={() => setShowIOSModal(false)}
+              className="mt-4 w-full rounded-xl bg-slate-900 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
