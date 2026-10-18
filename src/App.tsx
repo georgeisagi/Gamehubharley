@@ -22,7 +22,7 @@ import { ANDROID_PROJECT_FILES } from './androidProjectFiles';
 export default function App() {
   // Modal / panel visibility
   const [showTools, setShowTools] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<'export' | 'guide' | 'code'>('export');
+  const [activeTab, setActiveTab] = useState<'export' | 'sdk' | 'guide' | 'code'>('sdk');
   const [selectedFile, setSelectedFile] = useState<string>('app/src/main/java/com/georgeisagi/gamehub/MainActivity.kt');
   const [isZipping, setIsZipping] = useState<boolean>(false);
   const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
@@ -183,6 +183,17 @@ export default function App() {
                   Instalar & Exportar
                 </button>
                 <button
+                  onClick={() => setActiveTab('sdk')}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                    activeTab === 'sdk'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                  SDK & Gradle
+                </button>
+                <button
                   onClick={() => setActiveTab('guide')}
                   className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                     activeTab === 'guide'
@@ -314,6 +325,195 @@ export default function App() {
                     <div>✓ Zero botões / textos na tela</div>
                     <div>✓ Zero menus / animações</div>
                     <div>✓ 100% Offline (sem login)</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Conteúdo da Aba: SDK & Gradle (Downloads Nativos) */}
+            {activeTab === 'sdk' && (
+              <div className="space-y-4 overflow-y-auto pr-1">
+                {/* Destaque principal: Android Studio (SDK + Gradle inclusos) */}
+                <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-4 sm:p-5 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                          Recomendado pelo Google
+                        </span>
+                        <span className="text-xs text-slate-400">Instalador Oficial Completo</span>
+                      </div>
+                      <h3 className="text-base font-semibold">Android Studio (SDK 35 + Gradle Embutido)</h3>
+                      <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
+                        Instala automaticamente o Android SDK nativo, JDK do Java, gerenciador de dependências Gradle e o compilador Jetpack Compose com apenas 1 clique.
+                      </p>
+                    </div>
+
+                    <a
+                      href="https://developer.android.com/studio"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs rounded-xl shadow transition-all shrink-0 active:scale-95"
+                    >
+                      <Download className="w-4 h-4" />
+                      Baixar Android Studio
+                      <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Grade de downloads individuais standalone */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2.5">
+                    Downloads Standalone (Linha de Comando / Manual)
+                  </h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {/* Android SDK Command-line Tools */}
+                    <div className="border border-slate-200 rounded-2xl p-3.5 bg-white flex flex-col justify-between hover:border-slate-300 transition-colors">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase">Google SDK</span>
+                          <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">v11076708</span>
+                        </div>
+                        <h5 className="font-semibold text-xs text-slate-900">Android Command-Line Tools</h5>
+                        <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                          SDK Tools oficial contendo <code className="font-mono text-[10px]">sdkmanager</code>, <code className="font-mono text-[10px]">avdmanager</code> e build-tools.
+                        </p>
+                      </div>
+
+                      <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-col gap-1.5">
+                        <a
+                          href="https://dl.google.com/android/repository/commandlinetools-win-11076708_latest.zip"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between px-2.5 py-1.5 text-[11px] font-medium bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 rounded-lg transition-colors"
+                        >
+                          <span>Windows (.zip)</span>
+                          <Download className="w-3 h-3 text-slate-500" />
+                        </a>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          <a
+                            href="https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-center px-2 py-1 text-[10px] bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded transition-colors"
+                          >
+                            Linux (.zip)
+                          </a>
+                          <a
+                            href="https://dl.google.com/android/repository/commandlinetools-mac-11076708_latest.zip"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-center px-2 py-1 text-[10px] bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded transition-colors"
+                          >
+                            macOS (.zip)
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Gradle 8.9 Oficial */}
+                    <div className="border border-slate-200 rounded-2xl p-3.5 bg-white flex flex-col justify-between hover:border-slate-300 transition-colors">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase">Gradle Nativo</span>
+                          <span className="text-[10px] font-mono text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">v8.9</span>
+                        </div>
+                        <h5 className="font-semibold text-xs text-slate-900">Gradle Build Tool Oficial</h5>
+                        <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                          Distribuição oficial de compilação compatível com Kotlin 2.0 e AGP 8.7.2.
+                        </p>
+                      </div>
+
+                      <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-col gap-1.5">
+                        <a
+                          href="https://services.gradle.org/distributions/gradle-8.9-bin.zip"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between px-2.5 py-1.5 text-[11px] font-medium bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 rounded-lg transition-colors"
+                        >
+                          <span>Gradle 8.9 Binário (.zip)</span>
+                          <Download className="w-3 h-3 text-slate-500" />
+                        </a>
+                        <a
+                          href="https://services.gradle.org/distributions/gradle-8.9-all.zip"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-center px-2 py-1 text-[10px] bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded transition-colors"
+                        >
+                          Gradle Completo com Docs (.zip)
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Java OpenJDK 17 */}
+                    <div className="border border-slate-200 rounded-2xl p-3.5 bg-white flex flex-col justify-between hover:border-slate-300 transition-colors">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase">Requisito do SDK</span>
+                          <span className="text-[10px] font-mono text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">JDK 17 LTS</span>
+                        </div>
+                        <h5 className="font-semibold text-xs text-slate-900">OpenJDK 17 (Temurin)</h5>
+                        <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                          Ambiente de execução Java oficial necessário para o compilador do Gradle e do Android.
+                        </p>
+                      </div>
+
+                      <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-col gap-1.5">
+                        <a
+                          href="https://adoptium.net/temurin/releases/?version=17"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between px-2.5 py-1.5 text-[11px] font-medium bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 rounded-lg transition-colors"
+                        >
+                          <span>Baixar Java JDK 17</span>
+                          <ExternalLink className="w-3 h-3 text-slate-500" />
+                        </a>
+                        <span className="text-[10px] text-slate-400 text-center">
+                          Disponível para Windows, Mac e Linux
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scripts automatizados incluídos */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                  <h4 className="text-xs font-bold text-slate-800 mb-2 flex items-center gap-1.5">
+                    <Terminal className="w-4 h-4 text-slate-700" />
+                    Scripts de Compilação Automatizada Incluídos no Projeto
+                  </h4>
+                  <p className="text-xs text-slate-600 mb-3 leading-relaxed">
+                    Ao baixar o arquivo ZIP do projeto <strong>GameHub</strong>, você já recebe scripts prontos para rodar a compilação nativa com 2 cliques:
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="bg-white border border-slate-200 rounded-xl p-3 font-mono">
+                      <div className="text-[11px] font-bold text-slate-900 mb-1 font-sans flex items-center justify-between">
+                        <span>No Windows:</span>
+                        <code className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded">setup-sdk-and-build.bat</code>
+                      </div>
+                      <p className="text-[11px] text-slate-500 font-sans">
+                        Basta dar dois cliques no arquivo <code className="bg-slate-100 px-1 rounded text-slate-700">setup-sdk-and-build.bat</code> ou executar no CMD:
+                      </p>
+                      <div className="mt-2 bg-slate-900 text-emerald-400 p-2 rounded text-[11px]">
+                        setup-sdk-and-build.bat
+                      </div>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-xl p-3 font-mono">
+                      <div className="text-[11px] font-bold text-slate-900 mb-1 font-sans flex items-center justify-between">
+                        <span>No Linux / macOS:</span>
+                        <code className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded">setup-sdk-and-build.sh</code>
+                      </div>
+                      <p className="text-[11px] text-slate-500 font-sans">
+                        No terminal na pasta do projeto, execute:
+                      </p>
+                      <div className="mt-2 bg-slate-900 text-emerald-400 p-2 rounded text-[11px]">
+                        ./setup-sdk-and-build.sh
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

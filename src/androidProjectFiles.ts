@@ -353,6 +353,66 @@ gradle %*
 `
   },
   {
+    path: "setup-sdk-and-build.bat",
+    content: `@echo off
+echo ====================================================
+echo  GameHub - Compilador Nativo Android
+echo  Identificador: com.georgeisagi.gamehub
+echo ====================================================
+echo.
+
+java -version >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERRO] Java JDK 17+ nao foi encontrado no seu PATH.
+    echo Baixe o OpenJDK 17 em: https://adoptium.net/temurin/releases/?version=17
+    pause
+    exit /b 1
+)
+
+echo [INFO] Compilando APK via Gradle...
+call gradlew.bat assembleDebug
+
+if %ERRORLEVEL% EQU 0 (
+    echo.
+    echo ====================================================
+    echo [SUCESSO] APK gerado com sucesso!
+    echo Local: app\\build\\outputs\\apk\\debug\\app-debug.apk
+    echo ====================================================
+) else (
+    echo.
+    echo [DICA] Caso falte o Android SDK, abra a pasta no Android Studio
+    echo ou configure a variavel ANDROID_HOME.
+)
+pause
+`
+  },
+  {
+    path: "setup-sdk-and-build.sh",
+    content: `#!/usr/bin/env bash
+set -e
+echo "===================================================="
+echo " GameHub - Compilador Nativo Android"
+echo " Identificador: com.georgeisagi.gamehub"
+echo "===================================================="
+
+if ! command -v java &> /dev/null; then
+    echo "[ERRO] Java JDK 17+ não encontrado."
+    echo "Instale o OpenJDK 17:"
+    echo "  Ubuntu/Debian: sudo apt install openjdk-17-jdk"
+    echo "  macOS: brew install openjdk@17"
+    exit 1
+fi
+
+chmod +x gradlew
+./gradlew assembleDebug
+
+echo ""
+echo "===================================================="
+echo "[SUCESSO] APK gerado em: app/build/outputs/apk/debug/app-debug.apk"
+echo "===================================================="
+`
+  },
+  {
     path: "README.md",
     content: `# GameHub (Android Nativo - Kotlin & Jetpack Compose)
 
@@ -361,6 +421,17 @@ com.georgeisagi.gamehub
 
 ## Versão:
 1.0.0
+
+## Downloads Oficiais do SDK e Gradle:
+- **Android Studio (Inclui SDK + Gradle):** https://developer.android.com/studio#downloads
+- **Android Command-line Tools (SDK Oficial):**
+  - Windows: https://dl.google.com/android/repository/commandlinetools-win-11076708_latest.zip
+  - Linux: https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+  - macOS: https://dl.google.com/android/repository/commandlinetools-mac-11076708_latest.zip
+- **Gradle 8.9 (Distribuição Oficial):**
+  - https://services.gradle.org/distributions/gradle-8.9-bin.zip
+- **Java JDK 17 (Requisito do Android SDK):**
+  - https://adoptium.net/temurin/releases/?version=17
 
 ## Como compilar o APK:
 1. Abra esta pasta no Android Studio.
