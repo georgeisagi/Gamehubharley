@@ -1,0 +1,6 @@
+{
+  "name": "GameHub",
+  "description": "Aplicativo Android nativo em Kotlin e Jetpack Compose com identificador com.georgeisagi.gamehub.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
